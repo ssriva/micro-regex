@@ -33,7 +33,7 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Interval;
 
 
-public class AppositiveExtractor implements AnnotatorTokenSpan<String> {
+public class RegexExtractor implements AnnotatorTokenSpan<String> {
 
 	private static String rulesFile="src/main/resources/rules2.txt";
 	private static String organiznRulesFile="src/main/resources/organizationrules2.txt";
@@ -57,7 +57,7 @@ public class AppositiveExtractor implements AnnotatorTokenSpan<String> {
 		AnnotationTypeNLP.NER
 	};
 
-	public AppositiveExtractor() {
+	public RegexExtractor() {
 
 		/*
 		PipelineNLPStanford stanfordPipe = new PipelineNLPStanford();
@@ -76,7 +76,7 @@ public class AppositiveExtractor implements AnnotatorTokenSpan<String> {
 		PipelineNLPStanford pipelineStanford = new PipelineNLPStanford();
 		PipelineNLPExtendable pipelineExtendable = new PipelineNLPExtendable();
 
-		pipelineExtendable.extend(new AppositiveExtractor());
+		pipelineExtendable.extend(new RegexExtractor());
 		PipelineNLP pipeline = pipelineStanford.weld(pipelineExtendable);
 		DataTools dataTools = new DataTools();
 		dataTools.addAnnotationTypeNLP(REGEX_EXTRACTION);
@@ -144,7 +144,7 @@ public class AppositiveExtractor implements AnnotatorTokenSpan<String> {
 
 	public static void main(String[] args){
 		testRegex();
-		//AppositiveExtractor a = new AppositiveExtractor();
+		//RegexExtractor a = new RegexExtractor();
 	}
 
 	public static CoreMap getStanfordSentence(DocumentNLP document, int sentIdx){
