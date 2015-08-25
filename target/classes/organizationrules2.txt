@@ -1,0 +1,510 @@
+
+##############################ALTERNATE NAMES#############################
+//org:alternate_names
+
+{
+  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/also/ /known/ | /better/ /known/ | /best/ /known/ | /widely/ /known/ | /goes/)  (/as/ | /by/) []{0,3} (?$Y [ner:ORGANIZATION]+) ),
+  result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
+  stage: 26
+}
+
+{
+  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/goes/ /by/ []{0,3} /name/ | /is/ []{0,3} /name/ )  (/of/ | /for/ | /,/) []{0,3} (?$Y [ner:ORGANIZATION]+) ),
+  result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
+  stage: 26
+}
+
+{
+  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} /formerly|nee|previously/ []{0,1} (?$Y [ner:ORGANIZATION]+) ), 
+  result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
+  stage: 26
+}
+
+{
+  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/found.*/ | /created/) /as/? (?$Y [ner:ORGANIZATION]+) ), 
+  result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
+  stage: 26
+}
+
+{
+  pattern: ( (?$Y( (?$X [ner:ORGANIZATION]+) [/Corporation/ | /Corp./] ) ) ),
+  result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
+  stage: 26
+}
+
+############################## POLITICAL/RELIGIOUS AFFILIATION #############################
+//org:political_religious_affiliation
+$AFFILIATION= ( $RELIGION | /Communist/ | /Socialist/ | /Republican/ | /Democrat.*/ )
+
+//Money Cosmos is a venture of Karmath Infotech Private Limited -LRB- r -RRB- There are several plus points about Money Cosmos , which differ us from other affiliate websites .
+{
+	pattern: ( (?$Y $AFFILIATION) []{0,4} (?$X [ner:ORGANIZATION]+) ),
+	result: Format("%s|%s|%s R1",$$X.text, "org:political_religious_affiliation", $$Y.text),
+	stage: 27
+}
+
+{
+	pattern: ( (?$X [ner:ORGANIZATION]+) []{0,4} (?$Y $AFFILIATION) ),
+	result: Format("%s|%s|%s R2",$$X.text, "org:political_religious_affiliation", $$Y.text),
+	stage: 27
+}
+
+{
+	pattern: ( (?$X [ner:ORGANIZATION]+) []{0,3} (/follow.*/ | /practic.*/ | /affiliat.*/ | /is/ [tag:/DT/] | /are/ [tag:/DT/]) []{0,3} [tag:/JJ/]* [tag:/NN.*/]* (?$Y $AFFILIATION) ),
+	result: Format("%s|%s|%s R3",$$X.text, "org:political_religious_affiliation", $$Y.text),
+	stage: 27
+}
+
+{
+	pattern: ( (?$X [ner:ORGANIZATION]+) []{0,3} ( /affiliat.*/ ) []{0,3} [tag:/JJ/]* [tag:/NN.*/]* (?$Y [ner:ORGANIZATION]+) ),
+	result: Format("%s|%s|%s R4",$$X.text, "org:political_religious_affiliation", $$Y.text),
+	stage: 27
+}
+
+//org:top_members_employees
+$TOPMEMBERWORDS= (
+	/president/	|
+	/premier/	|
+	/vice-president/	|
+	/chief/ /executive/ /officer/	|
+	/chairman/	|
+	/manager/	|
+	/vp/	|
+	/ceo/	|
+	/cfo/	|
+	/chancellor/	|
+	/director/	|
+	/producer/	|
+	/head/	|
+	/leader/	|
+	/commander/ |
+	/led/	|
+	/led/ /by/	|
+	/commanded/ /by/	|
+	/commanded/	|
+	/overseen/ /by/
+)
+
+$TOPMEMBER= (
+	 [tag:/NN/]* ($TOPMEMBERWORDS)+ [tag:/NN/]*
+)
+
+############################## TOP MEMBERS/EMPLOYEES #############################
+
+//United States President Barack Obama
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) []{0,2} (?$Z $TOPMEMBER) []{0,2} (?$Y [ner:PERSON]+) ),
+	result: Format("%s|%s|%s",$$X.text, "org:top_members_employees", $$Y.text),
+	stage: 28
+}
+
+//Barack Obama, who was the president of the USA
+{
+	pattern: ( (?$Y [ner:PERSON]+) []{0,2} $APPELLATION []{0,3} (?$Z $TOPMEMBER) (/of/ | /for/)? []{0,2} (?$X [tag:/NNP/ | !ner:/O/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:top_members_employees", $$Y.text),
+	stage: 28
+}
+
+//Obama, who is the United States President
+{
+	pattern: ( (?$Y [ner:PERSON]+) [/,/ | /-LRB-/]? $APPELLATION []{0,3} (?$X [/tag:NNP/]+) (?$Z $TOPMEMBER) ),
+	result: Format("%s|%s|%s",$$X.text, "org:top_members_employees", $$Y.text),
+	stage: 28
+}
+
+############################## NUMBER OF EMPLOYEES/MEMBERS #############################
+
+// There are over 3000 permanent WWE members
+{
+	pattern: ( (/are/ | /is/) []{0,2} (?$Y [ner:NUMBER] ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) (/members/ | /employees/ | /people/ | /personnel/ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:number_of_employees_members", $$Y.text),
+	stage: 29
+}
+
+// Google employs over 1000 engineers every year
+// Google has 200000 employees,
+
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) (/has/ | /employs/) []{0,1} (?$Y [ner:NUMBER] ) []{0,3} [ /employees/ | /members/ | /people/ | /workers/]?  ),
+	result: Format("%s|%s|%s",$$X.text, "org:number_of_employees_members", $$Y.text),
+	stage: 29
+}
+
+############################## MEMBERS #############################
+
+// The USA, which had been a NATO member since ...
+{
+	pattern: ( (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION []{0,6} (/are/ | /is/ | /was/ | /were/ | /has/ /been/ | /had/ /been/ | /have/ /been/) []{0,2}  (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) /member.*/  ),
+	result: Format("%s|%s|%s R1",$$X.text, "org:members", $$Y.text),
+	stage: 30
+}
+
+// England, France and the USA were members of the Allied Powers .
+{
+	pattern: ( (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION []{0,6} (/are/ | /is/ | /was/ | /were/ | /has/ /been/ | /had/ /been/ | /have/ /been/) []{0,2} /member.*/ /of/ (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) ),
+	result: Format("%s|%s|%s R2",$$X.text, "org:members", $$Y.text),
+	stage: 30
+}
+
+//  Allied member USA .
+{
+	pattern: ( (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION ("member"|"members") []{0,1} (?$X [ner:/ORGANIZATION/ | ner:PERSON]+ ) ),
+	result: Format("%s|%s|%s R3",$$X.text, "org:members", $$Y.text),
+	stage: 30
+}
+
+############################## MEMBER OF #############################
+
+// The USA, which had been a NATO member since ...
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION []{0,6} (/are/ | /is/ | /was/ | /were/ | /has/ /been/ | /had/ /been/ | /have/ /been/) []{0,2}  (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) /member.*/  ),
+	result: Format("%s|%s|%s",$$X.text, "org:member_of", $$Y.text),
+	stage: 31
+}
+
+// England, France and the USA were members of the Allied Powers .
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION []{0,6} (/are/ | /is/ | /was/ | /were/ | /has/ /been/ | /had/ /been/ | /have/ /been/) []{0,2} /member.*/ /of/ (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:member_of", $$Y.text),
+	stage: 31
+}
+
+//  Allied member USA .
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ )  /member.*/ []{0,1} (?$Y [ner:/ORGANIZATION/ | ner:PERSON]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:member_of", $$Y.text),
+	stage: 31
+}
+
+############################## SUBSIDIARIES #############################
+
+// Google X has been a Google wing since ...
+{
+	pattern: ( (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION []{0,6} (/are/ | /is/ | /was/ | /were/ | /has/ /been/ | /had/ /been/ | /have/ /been/) []{0,2}  (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) ( /subidiar.*/ | /wing.*/ | /venture.*/ | /unit/)  ),
+	result: Format("%s|%s|%s",$$X.text, "org:subsidiaries", $$Y.text),
+	stage: 32
+}
+
+// ABC was a subsidiary of GOOGLE Inc .
+{
+	pattern: ( (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION []{0,6} (/are/ | /is/ | /was/ | /were/ | /has/ /been/ | /had/ /been/ | /have/ /been/) []{0,2} (/subsidiar.*/ | /wing.*/ | /venture.*/ | /unit/)  /of/ (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:subsidiaries", $$Y.text),
+	stage: 32
+}
+
+//  Google subsidiary ABC Coorp .
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) []{0,1} (/subsidiar.*/ | /wing.*/ | /venture.*/ | /unit/) (?$Y [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:subsidiaries", $$Y.text),
+	stage: 32
+}
+
+// US Government's Department of Defense
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) [tag:/POS/] []{0,3} (?$Y (/Department/ | /Bureau/ | /Office/ | /board/ | /Service/) & [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:subsidiaries", $$Y.text),
+	stage: 32
+}
+
+############################## PARENTS #############################
+
+// Google X has been a Google wing since ...
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION []{0,6} (/are/ | /is/ | /was/ | /were/ | /has/ /been/ | /had/ /been/ | /have/ /been/) []{0,2}  (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) ( /subidiar.*/ | /wing.*/)  ),
+	result: Format("%s|%s|%s",$$X.text, "org:parents", $$Y.text),
+	stage: 33
+}
+
+// ABC was a subsidiary of GOOGLE Inc .
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION []{0,6} (/are/ | /is/ | /was/ | /were/ | /has/ /been/ | /had/ /been/ | /have/ /been/) []{0,2} (/subsidiar.*/ | /wing.*/)  /of/ (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:parents", $$Y.text),
+	stage: 33
+}
+
+//  Google subsidiary ABC Coorp .
+{
+	pattern: ( (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) (/subsidiar.*/ | /wing.*/) []{0,5} (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:parents", $$Y.text),
+	stage: 33
+}
+
+// US Government's Department of Defense
+{
+	pattern: ( (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) [tag:/POS/] []{0,3} (?$X (/Department/ | /Bureau/ | /Office/ | /board/ | /Service/) & [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:parents", $$Y.text),
+	stage: 33
+}
+
+############################## FOUNDED BY #############################
+
+// Google was founded by Larry Page and Sergey Brin in 199*
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) $APPELLATION []{0,3} (/founded/ /by/ | /created/ /by/ | /founder/ | /creator/ | /conceived/ /by/ | /conceptualized/ | /origin.*/ | /started/) []{0,3} (?$Y [ner:PERSON]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:founded_by", $$Y.text),
+	stage: 34
+}
+
+// On 24 Oct 2015, * created ABC
+{
+	pattern: ( (?$Y [ner:PERSON]+ ) $APPELLATION (/started/ | /founded/ | /created/ | /conceptualized/ | /formed/) []{0,3} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:founded_by", $$Y.text),
+	stage: 34
+}
+
+############################## DATE FOUNDED #############################
+
+// Google was founded by Larry Page and Sergey Brin in 199*
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/ ]+ ) $APPELLATION []{0,3} (/found.*/ | /created/ | /conceiv.*/ | /conceptualized/ | /origin.*/ | /start.*/ | /formed/ ) []{0,8} (/on/ | /in/) (?$Y [ner:DATE]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:date_founded", $$Y.text),
+	stage: 35
+}
+
+// On 24 Oct 2015, * created ABC
+{
+	pattern: ( (/on/ | /in/) (?$Y [ner:DATE]+ )[]{0,8} (/found.*/ | /created/ | /conciev.*/ | /conceptualized/ | /origin.*/ | /start.*/ | /formed/ ) []{0,3} (?$X [ner:/ORGANIZATION/ ]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:date_founded", $$Y.text),
+	stage: 35
+}
+
+// On 24 Oct 2015, * ABC was created *
+{
+	pattern: ( (/on/ | /in/) (?$Y [ner:DATE]+ )[]{0,3} (?$X [ner:/ORGANIZATION/]+ ) /was/ (/found.*/ | /created/ | /conceiv.*/ | /conceptualized/ | /origin.*/ | /start.*/ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:date_founded", $$Y.text),
+	stage: 35
+}
+
+############################## DATE DISSOLVED #############################
+
+// Google merged with HP on DATE
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/ ]+ ) $APPELLATION (/merged/ /with/ | /merged/ /to/ | /dissolved/ | /bankrupt.*/ ) []{0,8} (/on/ | /in/) (?$Y [ner:DATE]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:date_dissolved", $$Y.text),
+	stage: 36
+}
+
+// On 24 Oct 2015, * ABC merged with *
+{
+	pattern: ( (/on/ | /in/) (?$Y [ner:DATE]+ )[]{0,3} (?$X [ner:/ORGANIZATION/]+ ) []{0,3} (/merged/ /with/ | /merged/ /to/ | /dissolved/ | /bankrupt.*/ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:date_dissolved", $$Y.text),
+	stage: 36
+}
+
+############################## COUNTRY OF HEADQUARTERS #############################
+
+// -based
+{
+	pattern: ( (?$Y /.*-based/ ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:country_of_headquarters", $$Y.text),
+	stage: 37
+}
+
+// Location followed by organization name
+{
+	pattern: ( (?$Y [ner:LOCATION]+ ) []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/ ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:country_of_headquarters", $$Y.text),
+	stage: 37
+}
+
+{
+	pattern: ( ( [ner:LOCATION]+ /,/? (?$Y [ner:LOCATION]+)) []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/ ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:country_of_headquarters", $$Y.text),
+	stage: 37
+}
+
+// Organization name following location
+{
+	pattern: (  (?$X [ner:/ORGANIZATION/]+ ) $APPELLATION []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/  ) []{0,2} (?$Y [ner:LOCATION]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:country_of_headquarters", $$Y.text),
+	stage: 37
+}
+
+{
+	pattern: (  (?$X [ner:/ORGANIZATION/]+ ) $APPELLATION []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/  ) []{0,2} ( [ner:LOCATION]+ /,/? (?$Y [ner:LOCATION]+)) ),
+	result: Format("%s|%s|%s",$$X.text, "org:country_of_headquarters", $$Y.text),
+	stage: 37
+}
+
+// Locations 's ORG
+{
+	pattern: ( (?$Y [ner:LOCATION]+) [tag:/POS/] []{0,3} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:country_of_headquarters", $$Y.text),
+	stage: 37
+}
+{
+	pattern: ( ( [ner:LOCATION]+ /,/? (?$Y [ner:LOCATION]+)) [tag:/POS/] []{0,3} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:country_of_headquarters", $$Y.text),
+	stage: 37
+}
+
+
+// British firm BP Petroleum
+{
+	pattern: ( (?$Y (/.*ish/ | /.*ian/) & [ner:MISC] ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:country_of_headquarters", $$Y.text),
+	stage: 37
+}
+
+############################## STATEORPROVINCE OF HEADQUARTERS #############################
+
+// -based
+{
+	pattern: ( (?$Y /.*-based/ ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:stateorprovince_of_headquarters", $$Y.text),
+	stage: 38
+}
+
+// Location followed by organization name
+{
+	pattern: ( (?$Y [ner:LOCATION]+ ) []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/ ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:stateorprovince_of_headquarters", $$Y.text),
+	stage: 38
+}
+
+{
+	pattern: ( ( [ner:LOCATION]+ /,/? (?$Y [ner:LOCATION]+)) []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/ ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:stateorprovince_of_headquarters", $$Y.text),
+	stage: 38
+}
+
+// Organization name following location
+{
+	pattern: (  (?$X [ner:/ORGANIZATION/]+ ) $APPELLATION []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/  ) []{0,2} (?$Y [ner:LOCATION]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:stateorprovince_of_headquarters", $$Y.text),
+	stage: 38
+}
+
+{
+	pattern: (  (?$X [ner:/ORGANIZATION/]+ ) $APPELLATION []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/  ) []{0,2} ( [ner:LOCATION]+ /,/? (?$Y [ner:LOCATION]+)) ),
+	result: Format("%s|%s|%s",$$X.text, "org:stateorprovince_of_headquarters", $$Y.text),
+	stage: 38
+}
+
+// Locations 's ORG
+{
+	pattern: ( (?$Y [ner:LOCATION]+) [tag:/POS/] []{0,3} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "oorg:stateorprovince_of_headquarters", $$Y.text),
+	stage: 38
+}
+{
+	pattern: ( ( [ner:LOCATION]+ /,/? (?$Y [ner:LOCATION]+)) [tag:/POS/] []{0,3} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:stateorprovince_of_headquarters", $$Y.text),
+	stage: 38
+}
+
+
+// British firm BP Petroleum
+{
+	pattern: ( (?$Y (/.*ish/ | /.*ian/) & [ner:MISC] ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:stateorprovince_of_headquarters", $$Y.text),
+	stage: 38
+}
+
+############################## CITY OF HEADQUARTERS #############################
+// -based
+{
+	pattern: ( (?$Y /.*-based/ ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:city_of_headquarters", $$Y.text),
+	stage: 39
+}
+
+// Location followed by organization name
+{
+	pattern: ( (?$Y [ner:LOCATION]+ ) []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/ ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:city_of_headquarters", $$Y.text),
+	stage: 39
+}
+
+{
+	pattern: ( ( (?$Y [ner:LOCATION])+ /,/? ( [ner:LOCATION]+)) []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/ ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:city_of_headquarters", $$Y.text),
+	stage: 39
+}
+
+// Organization name following location
+{
+	pattern: (  (?$X [ner:/ORGANIZATION/]+ ) $APPELLATION []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/  ) []{0,2} (?$Y [ner:LOCATION]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:city_of_headquarters", $$Y.text),
+	stage: 39
+}
+
+{
+	pattern: (  (?$X [ner:/ORGANIZATION/]+ ) $APPELLATION []{0,3} (/based/ | /hous.*/ | /home/ | /HQ/ | /headquarter.*/  ) []{0,2} ( (?$Y [ner:LOCATION]+) /,/? ([ner:LOCATION]+)) ),
+	result: Format("%s|%s|%s",$$X.text, "org:city_of_headquarters", $$Y.text),
+	stage: 39
+}
+
+// Locations 's ORG
+{
+	pattern: ( (?$Y [ner:LOCATION]+) [tag:/POS/] []{0,3} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:city_of_headquarters", $$Y.text),
+	stage: 39
+}
+{
+	pattern: ( ( (?$Y [ner:LOCATION]+) /,/? (?$Y [ner:LOCATION]+)) [tag:/POS/] []{0,3} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:city_of_headquarters", $$Y.text),
+	stage: 39
+}
+
+// British firm BP Petroleum
+{
+	pattern: ( (?$Y (/.*ish/ | /.*ian/) & [ner:MISC] ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:city_of_headquarters", $$Y.text),
+	stage: 39
+}
+
+############################## SHAREHOLDERS #############################
+
+{
+	pattern: ( (?$Y [ner:ORGANIZATION | ner:PERSON]+) $APPELLATION (/is/ | /are/ | /,/ | /-LRB-/ | /were/ | /was/ | /have/ | /own/ | /possess/) []{0,3} ( /shareholder.*/ | /shares/ ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:shareholders", $$Y.text),
+	stage: 40
+}
+{
+	pattern: ( (?$Y [ner:ORGANIZATION | ner:PERSON]+) $APPELLATION (/is/ | /are/ | /,/ | /-LRB-/ | /were/ | /was/ | /have/ | /own/ | /possess/) []{0,3} (?$X [ner:/ORGANIZATION/]+ ) [tag:/POS/] []{0,2} ( /shareholder.*/ | /shares/ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:shareholders", $$Y.text),
+	stage: 40
+}
+
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) [tag:/POS/]? ( /shareholder.*/) (?$Y [ner:ORGANIZATION | ner:PERSON]+) ),
+	result: Format("%s|%s|%s",$$X.text, "org:shareholders", $$Y.text),
+	stage: 40
+}
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) [tag:/POS/]? []{0,2} ( /shareholder.*/ | /shares/ ) (/is/ | /are/ | /were/ | /was/ | /have/ | /own/ | /possess/) []{0,2} (?$Y [ner:ORGANIZATION | ner:PERSON]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:shareholders", $$Y.text),
+	stage: 40
+}
+
+############################## WEBSITE #############################
+
+$URL= (
+	/http:.*/ |
+	/www\..*/	|
+	/.*\.org/	|
+	/.*\.com/	|
+	/.*\.gov/	|
+	/.*\.[A-Z]{2,4}/
+)
+
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/ | tag:/NNP/]+ ) []{0,2} (/web/ /site/ | /website/ | /contact/ | /email/) (/-LRB-/ | /,/ | /:/)? []{0,1}  (?$Y $URL) ),
+	result: Format("%s|%s|%s",$$X.text, "org:website", $$Y.text),
+	stage: 41
+}
+
+{
+	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) []{0,5}  (?$Y $URL) ),
+	result: Format("%s|%s|%s",$$X.text, "org:website", $$Y.text),
+	stage: 41
+}
+{
+	pattern: ( (?$Y $URL) []{1,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	result: Format("%s|%s|%s",$$X.text, "org:website", $$Y.text),
+	stage: 41
+}
+
+
+

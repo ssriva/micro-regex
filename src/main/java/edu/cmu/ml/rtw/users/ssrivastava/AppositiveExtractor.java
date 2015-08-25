@@ -32,8 +32,8 @@ import edu.stanford.nlp.util.Interval;
 
 public class AppositiveExtractor implements AnnotatorTokenSpan<String> {
 
-	private static String rulesFile="/Users/shashans/Desktop/rules2.txt";
-	private static String organiznRulesFile="/Users/shashans/Desktop/organizationrules2.txt";
+	private static String rulesFile="src/main/resources/rules2.txt";
+	private static String organiznRulesFile="src/main/resources/organizationrules2.txt";
 	private static CoreMapExpressionExtractor<MatchedExpression> extractor; // = CoreMapExpressionExtractor.createExtractorFromFiles( TokenSequencePattern.getNewEnv(), rulesFile, organiznRulesFile);
 	private static boolean verbose=false;
 
