@@ -147,8 +147,8 @@ public class RegexExtractor implements AnnotatorTokenSpan<String> {
 	}
 
 	public static void main(String[] args){
-		testRegex();
-		//RegexExtractor a = new RegexExtractor();
+		//testRegex();
+		RegexExtractor a = new RegexExtractor();
 	}
 
 	public static CoreMap getStanfordSentence(DocumentNLP document, int sentIdx){
