@@ -3,6 +3,8 @@ package edu.cmu.ml.rtw.users.ssrivastava;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.sun.jersey.server.impl.cdi.Utils;
+
 import edu.cmu.ml.rtw.generic.data.DataTools;
 import edu.cmu.ml.rtw.generic.data.annotation.AnnotationType;
 import edu.cmu.ml.rtw.generic.data.annotation.nlp.AnnotationTypeNLP;
@@ -35,13 +37,15 @@ import edu.stanford.nlp.util.Interval;
 
 public class RegexExtractor implements AnnotatorTokenSpan<String> {
 
-	private static String rulesFile="src/main/resources/rules2.txt";
-	private static String organiznRulesFile="src/main/resources/organizationrules2.txt";
+	private static String rulesFile= RegexExtractor.class.getResource("/rules2.txt").getFile();
+	private static String organiznRulesFile= RegexExtractor.class.getResource("/organizationrules2.txt").getFile();
 	private static CoreMapExpressionExtractor<MatchedExpression> extractor; // = CoreMapExpressionExtractor.createExtractorFromFiles( TokenSequencePattern.getNewEnv(), rulesFile, organiznRulesFile);
 	private static boolean verbose=false;
 
 	static{
 		try{
+			System.out.println(rulesFile);
+			System.out.println(organiznRulesFile);
 			extractor = CoreMapExpressionExtractor.createExtractorFromFiles( TokenSequencePattern.getNewEnv(), rulesFile, organiznRulesFile);
 		}catch(Exception e){
 			e.printStackTrace();
