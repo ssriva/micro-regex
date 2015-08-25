@@ -3,15 +3,11 @@ package edu.cmu.ml.rtw.users.ssrivastava;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.sun.jersey.server.impl.cdi.Utils;
 
-import edu.cmu.ml.rtw.generic.data.DataTools;
 import edu.cmu.ml.rtw.generic.data.annotation.AnnotationType;
 import edu.cmu.ml.rtw.generic.data.annotation.nlp.AnnotationTypeNLP;
 import edu.cmu.ml.rtw.generic.data.annotation.nlp.AnnotationTypeNLP.Target;
 import edu.cmu.ml.rtw.generic.data.annotation.nlp.DocumentNLP;
-import edu.cmu.ml.rtw.generic.data.annotation.nlp.DocumentNLPInMemory;
-import edu.cmu.ml.rtw.generic.data.annotation.nlp.Language;
 import edu.cmu.ml.rtw.generic.data.annotation.nlp.PoSTag;
 import edu.cmu.ml.rtw.generic.data.annotation.nlp.TokenSpan;
 import edu.cmu.ml.rtw.generic.data.annotation.nlp.micro.Annotation;
@@ -44,8 +40,8 @@ public class RegexExtractor implements AnnotatorTokenSpan<String> {
 
 	static{
 		try{
-			System.out.println(rulesFile);
-			System.out.println(organiznRulesFile);
+			//System.out.println(rulesFile);
+			//System.out.println(organiznRulesFile);
 			extractor = CoreMapExpressionExtractor.createExtractorFromFiles( TokenSequencePattern.getNewEnv(), rulesFile, organiznRulesFile);
 		}catch(Exception e){
 			e.printStackTrace();
@@ -73,9 +69,10 @@ public class RegexExtractor implements AnnotatorTokenSpan<String> {
 				Language.English, stanfordPipe);	
 
 		annotate(document);
-		*/
+		 */
 	}
 
+	/*
 	public static void testRegex() {
 		PipelineNLPStanford pipelineStanford = new PipelineNLPStanford();
 		PipelineNLPExtendable pipelineExtendable = new PipelineNLPExtendable();
@@ -91,7 +88,7 @@ public class RegexExtractor implements AnnotatorTokenSpan<String> {
 		for (Annotation annotation : annotations){
 			System.out.println(annotation.toJsonString());
 		}
-	}
+	}*/
 
 	@Override
 	public String getName() {
@@ -133,11 +130,14 @@ public class RegexExtractor implements AnnotatorTokenSpan<String> {
 					System.out.println(matchedExpressions.size());
 				}
 				for(MatchedExpression expr:matchedExpressions){
-					Interval<Integer> interv = expr.getCharOffsets();
-					TokenSpan ts = new TokenSpan(document, sentIdx, interv.first(), interv.second());
+					//Interval<Integer> interv = expr.getCharOffsets();
+					Interval<Integer> interv = expr.getTokenOffsets();
+					TokenSpan ts = new TokenSpan(document, sentIdx, interv.first(), interv.second()-1);
 					//System.out.println(expr.getValue().toString());
 					String result = expr.getValue().toString().substring(7, expr.getValue().toString().length()-1);
-					System.out.println("[ docId:"+ts.getDocument().getName()+" first:"+interv.first()+" end:"+interv.second()+" result:"+result+" ]");
+					if(verbose){
+						System.out.println("[ docId:"+ts.getDocument().getName()+" first:"+interv.first()+" end:"+interv.second()+" result:"+result+" ]");
+					}
 					annotationList.add(new Triple<TokenSpan, String, Double>(ts, result, 0.9));
 				}
 			}
@@ -147,7 +147,6 @@ public class RegexExtractor implements AnnotatorTokenSpan<String> {
 	}
 
 	public static void main(String[] args){
-		//testRegex();
 		RegexExtractor a = new RegexExtractor();
 	}
 
@@ -192,9 +191,9 @@ public class RegexExtractor implements AnnotatorTokenSpan<String> {
 			String word = token.get(CoreAnnotations.TextAnnotation.class);
 			String tag = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
 			String ner = token.get(CoreAnnotations.NamedEntityTagAnnotation.class);
-			System.out.print(word + "|" + tag + "|" +ner+"\t");
+			//System.out.print(word + "|" + tag + "|" +ner+"\t");
 		}
-		System.out.println();
+		//System.out.println();
 	}
 
 	public static boolean isGoodToProcess(CoreMap sentence){
