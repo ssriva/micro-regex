@@ -12,7 +12,10 @@ import edu.cmu.ml.rtw.generic.data.annotation.nlp.DocumentNLPInMemory;
 import edu.cmu.ml.rtw.generic.data.annotation.nlp.Language;
 import edu.cmu.ml.rtw.generic.data.annotation.nlp.PoSTag;
 import edu.cmu.ml.rtw.generic.data.annotation.nlp.TokenSpan;
+import edu.cmu.ml.rtw.generic.data.annotation.nlp.micro.Annotation;
 import edu.cmu.ml.rtw.generic.model.annotator.nlp.AnnotatorTokenSpan;
+import edu.cmu.ml.rtw.generic.model.annotator.nlp.PipelineNLP;
+import edu.cmu.ml.rtw.generic.model.annotator.nlp.PipelineNLPExtendable;
 import edu.cmu.ml.rtw.generic.model.annotator.nlp.PipelineNLPStanford;
 import edu.cmu.ml.rtw.generic.util.OutputWriter;
 import edu.cmu.ml.rtw.generic.util.Pair;
@@ -44,9 +47,9 @@ public class AppositiveExtractor implements AnnotatorTokenSpan<String> {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static final AnnotationTypeNLP<String> REGEX_EXTRACTION = new AnnotationTypeNLP<String>("nell-regex", String.class, Target.TOKEN_SPAN);
-	
+
 	private static final AnnotationType<?>[] REQUIRED_ANNOTATIONS = new AnnotationType<?>[] {
 		AnnotationTypeNLP.TOKEN,
 		AnnotationTypeNLP.SENTENCE,
@@ -56,6 +59,7 @@ public class AppositiveExtractor implements AnnotatorTokenSpan<String> {
 
 	public AppositiveExtractor() {
 
+		/*
 		PipelineNLPStanford stanfordPipe = new PipelineNLPStanford();
 		stanfordPipe = new PipelineNLPStanford(stanfordPipe);
 		DocumentNLP document = new DocumentNLPInMemory(new DataTools(new OutputWriter()), 
@@ -63,8 +67,26 @@ public class AppositiveExtractor implements AnnotatorTokenSpan<String> {
 				//"theDocument", "Harvey Samuel Firestone (December 20, 1868 – February 7, 1938) was an American businessman, and the founder of the Firestone Tire and Rubber Company, one of the first global makers of automobile tires. Firestone was born on the Columbiana, Ohio farm built by his paternal grandfather. He was the second of Benjamin and Catherine (nee Flickinger) Firestone's three sons; Benjamin had a son and a daughter by his first wife. India is the capital of Asia .",
 				"document_1", "Harvey Samuel Firestone (December 20, 1868 - February 7, 1938) was an American businessman, and the founder of the Firestone Tire and Rubber Company, one of the first global makers of automobile tires. Firestone was born on the Columbiana, Ohio farm built by his paternal grandfather. He was the second of Benjamin and Catherine (nee Flickinger) Firestone's three sons; Benjamin had a son and a daughter by his first wife. India is the capital of Asia . Firestone's paternal great-great-great-grandfather, Nicholas Hans Feuerstein, immigrated from Berg/Alsace/France,[2] in 1753, and settled in Pennsylvania.[3] Three of Nicholas's sons - including Harvey's great-great-grandfather, Johan Nicholas - changed their surname to Firestone, the English translation of the family's German name. Firestone's birthplace was moved years later to Greenfield Village, a 90-acre (360,000 m2) historical site founded by Henry Ford. On 20 November 1895, Firestone married Idabelle Smith,[5] and had seven children. Notable great-grandchildren include: Andrew Firestone, Nick Firestone, and William Clay Ford, Jr. (the son of Henry Ford's grandson and Harvey and Idabelle's granddaughter Martha). After graduating from Columbiana High School, Firestone worked for the Columbus Buggy Company in Columbus, Ohio before starting his own company in 1890, making rubber tires for carriages. In 1900 he soon saw the huge potential for marketing tires for automobiles and then founded the Firestone Tire and Rubber Company, a pioneer in the mass production of tires. In 1926 he published a book, Men and Rubber: The Story of Business, which was written in collaboration with Samuel Crowther.[6] In 1938, Firestone died peacefully at his vacation home in Miami Beach, Florida at the age of 69.[1]",
 				Language.English, stanfordPipe);	
-	
+
 		annotate(document);
+		*/
+	}
+
+	public static void testRegex() {
+		PipelineNLPStanford pipelineStanford = new PipelineNLPStanford();
+		PipelineNLPExtendable pipelineExtendable = new PipelineNLPExtendable();
+
+		pipelineExtendable.extend(new AppositiveExtractor());
+		PipelineNLP pipeline = pipelineStanford.weld(pipelineExtendable);
+		DataTools dataTools = new DataTools();
+		dataTools.addAnnotationTypeNLP(REGEX_EXTRACTION);
+		DocumentNLP document = new DocumentNLPInMemory(dataTools, 
+				"Test document", "Harvey Samuel Firestone (December 20, 1868 – February 7, 1938) was an American businessman, and the founder of the Firestone Tire and Rubber Company, one of the first global makers of automobile tires. Firestone was born on the Columbiana, Ohio farm built by his paternal grandfather. He was the second of Benjamin and Catherine (nee Flickinger) Firestone's three sons; Benjamin had a son and a daughter by his first wife. India is the capital of Asia .",
+				Language.English, pipeline);
+		List<Annotation> annotations = document.toMicroAnnotation().getAllAnnotations();
+		for (Annotation annotation : annotations){
+			System.out.println(annotation.toJsonString());
+		}
 	}
 
 	@Override
@@ -95,11 +117,11 @@ public class AppositiveExtractor implements AnnotatorTokenSpan<String> {
 
 			CoreMap sentence = getStanfordSentence(document, sentIdx);
 			printSentence(sentence);
-				
+
 			if( !isGoodToProcess(sentence) ){
 				continue;
 			}
-			
+
 			//System.out.println("Extracting patterns from sentence with index "+sentIdx);
 			List<MatchedExpression> matchedExpressions = extractor.extractExpressions(sentence);
 			if(matchedExpressions.size()>0){
@@ -121,7 +143,8 @@ public class AppositiveExtractor implements AnnotatorTokenSpan<String> {
 	}
 
 	public static void main(String[] args){
-		AppositiveExtractor a = new AppositiveExtractor();
+		testRegex();
+		//AppositiveExtractor a = new AppositiveExtractor();
 	}
 
 	public static CoreMap getStanfordSentence(DocumentNLP document, int sentIdx){
@@ -139,7 +162,7 @@ public class AppositiveExtractor implements AnnotatorTokenSpan<String> {
 			token.setSentIndex(sentIdx);
 			token.setBeginPosition(document.getToken(sentIdx, i).getCharSpanStart());
 			token.setEndPosition(document.getToken(sentIdx, i).getCharSpanEnd());
-			
+
 			//System.out.println(token.word()+" "+token.beginPosition()+" "+token.endPosition());
 			tokenList.add(token);
 		}
