@@ -33,8 +33,13 @@ import edu.stanford.nlp.util.Interval;
 
 public class RegexExtractor implements AnnotatorTokenSpan<String> {
 
+    /* bkdb quick hack because somehow it's not finding these when running from micro-hadoop
 	private static String rulesFile= RegexExtractor.class.getResource("/rules2.txt").getFile();
 	private static String organiznRulesFile= RegexExtractor.class.getResource("/organizationrules2.txt").getFile();
+    */
+    private static String rulesFile= "rules2.txt";
+    private static String organiznRulesFile= "organizationrules2.txt";
+
 	private static CoreMapExpressionExtractor<MatchedExpression> extractor; // = CoreMapExpressionExtractor.createExtractorFromFiles( TokenSequencePattern.getNewEnv(), rulesFile, organiznRulesFile);
 	private static boolean verbose=false;
 
