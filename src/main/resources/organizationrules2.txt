@@ -3,31 +3,31 @@
 //org:alternate_names
 
 {
-  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/also/ /known/ | /better/ /known/ | /best/ /known/ | /widely/ /known/ | /goes/)  (/as/ | /by/) []{0,3} (?$Y [ner:ORGANIZATION]+) ),
+  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/also/ /known/ | /better/ /known/ | /best/ /known/ | /widely/ /known/ | /goes/ | /renamed/)  (/as/ | /by/) [!ner:ORGANIZATION]{0,3} (?$Y [ner:ORGANIZATION]+) ),
   result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
   stage: 26
 }
 
 {
-  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/goes/ /by/ []{0,3} /name/ | /is/ []{0,3} /name/ )  (/of/ | /for/ | /,/) []{0,3} (?$Y [ner:ORGANIZATION]+) ),
+  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/goes/ /by/ []{0,3} /name/ | /is/ []{0,3} /name/ )  (/of/ | /for/ | /,/) [!ner:ORGANIZATION]{0,3} (?$Y [ner:ORGANIZATION]+) ),
   result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
   stage: 26
 }
 
 {
-  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} /formerly|nee|previously/ []{0,1} (?$Y [ner:ORGANIZATION]+) ), 
+  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} /formerly|nee|previously/ [!ner:ORGANIZATION]{0,1} (?$Y [ner:ORGANIZATION]+) ), 
   result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
   stage: 26
 }
 
 {
-  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/found.*/ | /created/) /as/? (?$Y [ner:ORGANIZATION]+) ), 
+  pattern: ( (?$X [ner:ORGANIZATION]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/found.*/ | /created/ | /renamed/) /as/? (?$Y [ner:ORGANIZATION]+) ), 
   result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
   stage: 26
 }
 
 {
-  pattern: ( (?$Y( (?$X [ner:ORGANIZATION]+) [/Corporation/ | /Corp./] ) ) ),
+  pattern: ( (?$Y( (?$X [ner:ORGANIZATION]+) [/Corporation/ | /Corp./ | /Inc./ | /LLC/ ] ) ) ),
   result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
   stage: 26
 }
@@ -38,26 +38,26 @@ $AFFILIATION= ( $RELIGION | /Communist/ | /Socialist/ | /Republican/ | /Democrat
 
 //Money Cosmos is a venture of Karmath Infotech Private Limited -LRB- r -RRB- There are several plus points about Money Cosmos , which differ us from other affiliate websites .
 {
-	pattern: ( (?$Y $AFFILIATION) []{0,4} (?$X [ner:ORGANIZATION]+) ),
-	result: Format("%s|%s|%s R1",$$X.text, "org:political_religious_affiliation", $$Y.text),
+	pattern: ( (?$Y $AFFILIATION) [!ner:ORGANIZATION]{0,4} (?$X [ner:ORGANIZATION]+) ),
+	result: Format("%s|%s|%s",$$X.text, "org:political_religious_affiliation", $$Y.text),
 	stage: 27
 }
 
 {
 	pattern: ( (?$X [ner:ORGANIZATION]+) []{0,4} (?$Y $AFFILIATION) ),
-	result: Format("%s|%s|%s R2",$$X.text, "org:political_religious_affiliation", $$Y.text),
+	result: Format("%s|%s|%s",$$X.text, "org:political_religious_affiliation", $$Y.text),
 	stage: 27
 }
 
 {
 	pattern: ( (?$X [ner:ORGANIZATION]+) []{0,3} (/follow.*/ | /practic.*/ | /affiliat.*/ | /is/ [tag:/DT/] | /are/ [tag:/DT/]) []{0,3} [tag:/JJ/]* [tag:/NN.*/]* (?$Y $AFFILIATION) ),
-	result: Format("%s|%s|%s R3",$$X.text, "org:political_religious_affiliation", $$Y.text),
+	result: Format("%s|%s|%s",$$X.text, "org:political_religious_affiliation", $$Y.text),
 	stage: 27
 }
 
 {
 	pattern: ( (?$X [ner:ORGANIZATION]+) []{0,3} ( /affiliat.*/ ) []{0,3} [tag:/JJ/]* [tag:/NN.*/]* (?$Y [ner:ORGANIZATION]+) ),
-	result: Format("%s|%s|%s R4",$$X.text, "org:political_religious_affiliation", $$Y.text),
+	result: Format("%s|%s|%s",$$X.text, "org:political_religious_affiliation", $$Y.text),
 	stage: 27
 }
 
@@ -93,7 +93,7 @@ $TOPMEMBER= (
 
 //United States President Barack Obama
 {
-	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) []{0,2} (?$Z $TOPMEMBER) []{0,2} (?$Y [ner:PERSON]+) ),
+	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) []{0,2} (?$Z $TOPMEMBER) [!ner:PERSON]{0,2} (?$Y [ner:PERSON]+) ),
 	result: Format("%s|%s|%s",$$X.text, "org:top_members_employees", $$Y.text),
 	stage: 28
 }
@@ -116,7 +116,7 @@ $TOPMEMBER= (
 
 // There are over 3000 permanent WWE members
 {
-	pattern: ( (/are/ | /is/) []{0,2} (?$Y [ner:NUMBER] ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) (/members/ | /employees/ | /people/ | /personnel/ ) ),
+	pattern: ( (/are/ | /is/) []{0,2} (?$Y [ner:NUMBER] ) [!ner:ORGANIZATION]{0,2} (?$X [ner:ORGANIZATION]+ ) (/members/ | /employees/ | /people/ | /personnel/ ) ),
 	result: Format("%s|%s|%s",$$X.text, "org:number_of_employees_members", $$Y.text),
 	stage: 29
 }
@@ -125,7 +125,7 @@ $TOPMEMBER= (
 // Google has 200000 employees,
 
 {
-	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) (/has/ | /employs/) []{0,1} (?$Y [ner:NUMBER] ) []{0,3} [ /employees/ | /members/ | /people/ | /workers/]?  ),
+	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) (/has/ | /employ.*/) [!ner:NUMBER]{0,1} (?$Y [ner:NUMBER] ) []{0,3} [ /employees/ | /members/ | /people/ | /workers/]?  ),
 	result: Format("%s|%s|%s",$$X.text, "org:number_of_employees_members", $$Y.text),
 	stage: 29
 }
@@ -135,21 +135,21 @@ $TOPMEMBER= (
 // The USA, which had been a NATO member since ...
 {
 	pattern: ( (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION []{0,6} (/are/ | /is/ | /was/ | /were/ | /has/ /been/ | /had/ /been/ | /have/ /been/) []{0,2}  (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) /member.*/  ),
-	result: Format("%s|%s|%s R1",$$X.text, "org:members", $$Y.text),
+	result: Format("%s|%s|%s",$$X.text, "org:members", $$Y.text),
 	stage: 30
 }
 
 // England, France and the USA were members of the Allied Powers .
 {
 	pattern: ( (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION []{0,6} (/are/ | /is/ | /was/ | /were/ | /has/ /been/ | /had/ /been/ | /have/ /been/) []{0,2} /member.*/ /of/ (?$X [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) ),
-	result: Format("%s|%s|%s R2",$$X.text, "org:members", $$Y.text),
+	result: Format("%s|%s|%s",$$X.text, "org:members", $$Y.text),
 	stage: 30
 }
 
 //  Allied member USA .
 {
 	pattern: ( (?$Y [ner:/ORGANIZATION/ | ner:/LOCATION/ | tag:/NNP.*/ ]+ ) $APPELLATION ("member"|"members") []{0,1} (?$X [ner:/ORGANIZATION/ | ner:PERSON]+ ) ),
-	result: Format("%s|%s|%s R3",$$X.text, "org:members", $$Y.text),
+	result: Format("%s|%s|%s",$$X.text, "org:members", $$Y.text),
 	stage: 30
 }
 
@@ -240,7 +240,7 @@ $TOPMEMBER= (
 
 // Google was founded by Larry Page and Sergey Brin in 199*
 {
-	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) $APPELLATION []{0,3} (/founded/ /by/ | /created/ /by/ | /founder/ | /creator/ | /conceived/ /by/ | /conceptualized/ | /origin.*/ | /started/) []{0,3} (?$Y [ner:PERSON]+ ) ),
+	pattern: ( (?$X [ner:/ORGANIZATION/]+ ) $APPELLATION []{0,3} (/founded/ /by/ | /created/ /by/ | /founder/ | /creator/ | /conceived/ /by/ | /conceptualized/ | /origin.*/ | /started/) [!ner:PERSON]{0,3} (?$Y [ner:PERSON]+ ) ),
 	result: Format("%s|%s|%s",$$X.text, "org:founded_by", $$Y.text),
 	stage: 34
 }
@@ -263,7 +263,7 @@ $TOPMEMBER= (
 
 // On 24 Oct 2015, * created ABC
 {
-	pattern: ( (/on/ | /in/) (?$Y [ner:DATE]+ )[]{0,8} (/found.*/ | /created/ | /conciev.*/ | /conceptualized/ | /origin.*/ | /start.*/ | /formed/ ) []{0,3} (?$X [ner:/ORGANIZATION/ ]+ ) ),
+	pattern: ( (/on/ | /in/) (?$Y [ner:DATE]+ )[]{0,8} (/found.*/ | /created/ | /conciev.*/ | /conceptualized/ | /origin.*/ | /start.*/ | /formed/ ) [!ner:ORGANIZATION]{0,3} (?$X [ner:/ORGANIZATION/ ]+ ) ),
 	result: Format("%s|%s|%s",$$X.text, "org:date_founded", $$Y.text),
 	stage: 35
 }
@@ -279,14 +279,14 @@ $TOPMEMBER= (
 
 // Google merged with HP on DATE
 {
-	pattern: ( (?$X [ner:/ORGANIZATION/ ]+ ) $APPELLATION (/merged/ /with/ | /merged/ /to/ | /dissolved/ | /bankrupt.*/ ) []{0,8} (/on/ | /in/) (?$Y [ner:DATE]+ ) ),
+	pattern: ( (?$X [ner:/ORGANIZATION/ ]+ ) $APPELLATION (/merged/ /with/ | /merged/ /to/ | /dissolved/ | /bankrupt.*/ | /acqui.*/ ) []{0,8} (/on/ | /in/) (?$Y [ner:DATE]+ ) ),
 	result: Format("%s|%s|%s",$$X.text, "org:date_dissolved", $$Y.text),
 	stage: 36
 }
 
 // On 24 Oct 2015, * ABC merged with *
 {
-	pattern: ( (/on/ | /in/) (?$Y [ner:DATE]+ )[]{0,3} (?$X [ner:/ORGANIZATION/]+ ) []{0,3} (/merged/ /with/ | /merged/ /to/ | /dissolved/ | /bankrupt.*/ ) ),
+	pattern: ( (/on/ | /in/) (?$Y [ner:DATE]+ )[]{0,3} (?$X [ner:/ORGANIZATION/]+ ) []{0,3} (/merged/ /with/ | /merged/ /to/ | /dissolved/ | /bankrupt.*/ | /acqui.*/ ) ),
 	result: Format("%s|%s|%s",$$X.text, "org:date_dissolved", $$Y.text),
 	stage: 36
 }
@@ -457,7 +457,7 @@ $TOPMEMBER= (
 ############################## SHAREHOLDERS #############################
 
 {
-	pattern: ( (?$Y [ner:ORGANIZATION | ner:PERSON]+) $APPELLATION (/is/ | /are/ | /,/ | /-LRB-/ | /were/ | /was/ | /have/ | /own/ | /possess/) []{0,3} ( /shareholder.*/ | /shares/ ) []{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
+	pattern: ( (?$Y [ner:ORGANIZATION | ner:PERSON]+) $APPELLATION (/is/ | /are/ | /,/ | /-LRB-/ | /were/ | /was/ | /have/ | /own/ | /possess/) []{0,3} ( /shareholder.*/ | /shares/ ) [!ner:ORGANIZATION]{0,2} (?$X [ner:/ORGANIZATION/]+ ) ),
 	result: Format("%s|%s|%s",$$X.text, "org:shareholders", $$Y.text),
 	stage: 40
 }
