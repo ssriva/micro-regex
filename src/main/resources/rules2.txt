@@ -44,8 +44,14 @@ ENV.defaultResultAnnotationKey = ner
 }
 
 {
-  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]? []{0,2} (/formerly/ | /nee/ | /previously/) []{0,1} (?$Y [ner:PERSON]+) ), 
+  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]? []{0,2} (/formerly/ | /previously/) []{0,1} (?$Y [ner:PERSON]+) ), 
   result: Format("%s|%s|%s",$$X.text, "per:alternate_names", $$Y.text),
+  stage: 1
+}
+
+{
+  pattern: ( (?$X (?$first [ner:PERSON]+ ) [ner:PERSON]?) [/,/ | /-LRB-/]? []{0,2} ( /nee/) []{0,1} (?$last [ner:PERSON]+) ), 
+  result: Format("%s|%s|%s %s",$$X.text, "per:alternate_names", $$first.text, $$last.text),
   stage: 1
 }
 
@@ -56,19 +62,19 @@ ENV.defaultResultAnnotationKey = ner
 }
 
 {
-  pattern: ( (?$first [ner:PERSON]+) (?$Y [ner:PERSON & tag:SYM & !/,/] [ner:PERSON]+ [ner:PERSON & tag:SYM & !/,/]) (?$last [ner:PERSON]+)  ), 
+  pattern: ( (?$first [ner:PERSON]+) (?$Y [ner:PERSON & /['"`]+/ ] [ner:PERSON]+ [ner:PERSON & /['"`]+/]) (?$last [ner:PERSON]+)  ), 
   result: Format("%s %s|%s|%s",$$first.text, $$last.text, "per:alternate_names", $$Y.text),
   stage: 1
 }
 
 {
-  pattern: ( (?$X [ner:PERSON]+) (?$Y [tag:SYM & !/,/] [ner:PERSON]+ [tag:SYM & !/,/]) ), 
+  pattern: ( (?$X [ner:PERSON]+) (?$Y [ /['"`]+/ ] [ner:PERSON]+ [ /['"`]+/ ]) ), 
   result: Format("%s|%s|%s",$$X.text, "per:alternate_names", $$Y.text),
   stage: 1
 }
 
 {
-  pattern: ( (?$Y [tag:SYM & !/,/] [ner:PERSON]+ [tag:SYM & !/,/]) (?$X [ner:PERSON]+) ), 
+  pattern: ( (?$Y [ /['"`]+/ ] [ner:PERSON]+ [ /['"`]+/ ]) (?$X [ner:PERSON]+) ), 
   result: Format("%s|%s|%s",$$X.text, "per:alternate_names", $$Y.text),
   stage: 1
 }
