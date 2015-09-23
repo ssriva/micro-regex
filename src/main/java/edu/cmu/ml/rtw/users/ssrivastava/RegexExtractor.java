@@ -195,10 +195,20 @@ public class RegexExtractor implements AnnotatorTokenSpan<String> {
 		}
 
 		//Check if sentence is ill-formed: all NNPs
-		int nnp=0, len= tokens.size();
+		int nnp=0, len= tokens.size(), nnseq=0;
 		for(CoreLabel token:tokens){
-			if(token.get(CoreAnnotations.PartOfSpeechAnnotation.class).equals("NNP")){
+			if(token.get(CoreAnnotations.PartOfSpeechAnnotation.class).startsWith("NN") || token.get(CoreAnnotations.PartOfSpeechAnnotation.class).equals("FW")){
 				nnp++;
+				nnseq++;
+				if(nnseq >= 8){
+					if(verbose){
+						System.err.println("BAD SENTENCE");
+						printSentence(sentence);
+					}
+					return false;
+				}
+			}else{
+				nnseq = 0;
 			}
 		}
 		if(len >=10 && nnp> 0.7*len ){
