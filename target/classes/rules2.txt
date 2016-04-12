@@ -4,18 +4,12 @@ ENV.defaultStringPatternFlags = 2
 ner = { type: "CLASS", value: "edu.stanford.nlp.ling.CoreAnnotations$NamedEntityTagAnnotation" }
 tokens = { type: "CLASS", value: "edu.stanford.nlp.ling.CoreAnnotations$TokensAnnotation" }
 
-$Disease = (
-  /cancer/|
-  /allergy/| 
-  /acne/|
-  /breast/ /cancer/
+$ENTITY = ( 
+	[ner:PERSON | ner:ORGANIZATION | tag:/NNP/]+
 )
 
-// the Indian-born Scientist who
-// the US President
-
 $APPELLATION = ( 
-	[/,/ | /LRB/]? ([tag:/W.*/] [tag:/VB.*/]* )? ([tag:/DT/]? [tag:/JJ/]* [tag:/NN.*/]+ ([tag:/IN/]? [tag:/DT/]? [tag:/JJ/]* [tag:/NN.*/]+)? )? [tag:/W.*/]?
+	[/,/ | /LRB/]? (([tag:/W.*/] [tag:/VB.*/]* ) | /was/ | /were/ | /is/ | /are/ )? ([tag:/DT/]? [tag:/JJ/]* [tag:/NN.*/]+ ([tag:/IN/]? [tag:/DT/]? [tag:/JJ/]* [tag:/NN.*/]+)? )? ([tag:/W.*/ | /and/])? 
 )
 
 $WHO = ( 
@@ -25,79 +19,115 @@ $WHO = (
 ENV.defaults["ruleType"] = "tokens"
 ENV.defaults["stage"] = 1
 ENV.defaultResultAnnotationKey = ner
- 
-{
-  pattern: ((/Sen/ []{0,2} /Developer/)), 
-  result: Format("%s %s","per:alternate_names", $$00.text)
-}
-
-//{
-//  pattern: ( (?$X [ner:PERSON]+) /,/ ),
-//  result: Format("%s %s", "person_followedbycomma:",$$0.text)
-// }
 
 //$PUNC= [/,/ | /LRB/]
 
 //per:alternate_names
+##############################ALTERNATE NAMES#############################
 
 {
-  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} /also|better|best|widely/ /known/ /as|by/ []{0,3} (?$Y [ner:PERSON]+) ),
+  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]? []{0,2} $APPELLATION []{0,2} /also|better|best|widely/ /known/ /as|by/ [!ner:PERSON]{0,3} (?$Y [ner:PERSON]+) ),
   result: Format("%s|%s|%s",$$X.text, "per:alternate_names", $$Y.text),
   stage: 1
 }
 
 {
-  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/also/ /known/ | /better/ /known/ | /best/ /known/ | /widely/ /known/ | /goes/)  (/as/ | /by/) []{0,3} (?$Y [ner:PERSON]+) ),
+  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]? []{0,2} $APPELLATION []{0,2} (/also/ /known/ | /better/ /known/ | /best/ /known/ | /widely/ /known/ | /goes/)  (/as/ | /by/) [!ner:PERSON]{0,3} (?$Y [ner:PERSON]+) ),
   result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
   stage: 1
 }
 
 {
-  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/goes/ /by/ []{0,3} /name/ | /is/ []{0,3} /name/ )  (/of/ | /for/ | /,/) []{0,3} (?$Y [ner:PERSON]+) ),
+  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]? []{0,2} $APPELLATION []{0,2} (/goes/ /by/ []{0,3} /name/ | /is/ []{0,3} /name/ )  (/of/ | /for/ | /,/) [!ner:PERSON]{0,3} (?$Y [ner:PERSON]+) ),
   result: Format("%s|%s|%s",$$X.text, "org:alternate_names", $$Y.text),
   stage: 1
 }
 
 {
-  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] []{0,2} /formerly|nee|previously/ []{0,1} (?$Y [ner:PERSON]+) ), 
+  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]? []{0,2} (/formerly/ | /previously/) []{0,1} (?$Y [ner:PERSON]+) ), 
   result: Format("%s|%s|%s",$$X.text, "per:alternate_names", $$Y.text),
   stage: 1
 }
 
 {
-  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] []{0,2} $APPELLATION []{0,2} (/born/ | /birth.*/) /as/? (?$Y [ner:PERSON]+) ), 
+  pattern: ( (?$X (?$first [ner:PERSON]+ ) [ner:PERSON]?) [/,/ | /-LRB-/]? []{0,2} ( /nee/) []{0,1} (?$last [ner:PERSON]+) ), 
+  result: Format("%s|%s|%s %s",$$X.text, "per:alternate_names", $$first.text, $$last.text),
+  stage: 1
+}
+
+{
+  pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]? []{0,2} $APPELLATION []{0,2} (/born/ | /birth.*/) /as/? (?$Y [ner:PERSON]+) ), 
   result: Format("%s|%s|%s",$$X.text, "per:alternate_names", $$Y.text),
   stage: 1
 }
 
+{
+  pattern: ( (?$first [ner:PERSON]+) (?$Y [ner:PERSON & /['"`]+/ ] [ner:PERSON]+ [ner:PERSON & /['"`]+/]) (?$last [ner:PERSON]+)  ), 
+  result: Format("%s %s|%s|%s",$$first.text, $$last.text, "per:alternate_names", $$Y.text),
+  stage: 1
+}
+
+{
+  pattern: ( (?$X [ner:PERSON]+) (?$Y [ /['"`]+/ ] [ner:PERSON]+ [ /['"`]+/ ]) ), 
+  result: Format("%s|%s|%s",$$X.text, "per:alternate_names", $$Y.text),
+  stage: 1
+}
+
+{
+  pattern: ( (?$Y [ /['"`]+/ ] [ner:PERSON]+ [ /['"`]+/ ]) (?$X [ner:PERSON]+) ), 
+  result: Format("%s|%s|%s",$$X.text, "per:alternate_names", $$Y.text),
+  stage: 1
+}
+
+############################## DATE OF BIRTH #############################
 // per:date_of_birth 
 
 {
-  pattern: ( (?$X [ner:PERSON | ner:ORGANIZATION]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} [/born/ | /birth/] []{0,5} /on/? (?$Y [ner:DATE]+) ), 
+  pattern: ( (?$X [ner:PERSON | ner:ORGANIZATION]+) $APPELLATION []{0,5} [/born/ | /birth.*/] [!ner:DATE]{0,6} (/on/) (?$Y [ner:DATE]+) ), 
   result: Format("%s|%s|%s",$$X.text, "per:date_of_birth", $$Y.text),
   stage: 2
 }
 
 {
-  pattern: ( (?$X [ner:PERSON | ner:ORGANIZATION]+) [/,/ | /-LRB-/]  ([/born/ | /birth.*/] []?)? (?$Y [ner:DATE]+) []? (?$Z [ner:DATE]+) ), 
+  pattern: ( (?$X [ner:PERSON | ner:ORGANIZATION]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} [/born/ | /birth.*/] [!ner:DATE]{0,6} (/on/)? (?$Y [ner:DATE]+) ), 
   result: Format("%s|%s|%s",$$X.text, "per:date_of_birth", $$Y.text),
   stage: 2
 }
 
+{
+  pattern: ( (?$X [ner:PERSON | ner:ORGANIZATION]+) [/,/ | /-LRB-/]?  ([/born/ | /birth.*/] []{0,1})? (?$Y [ner:DATE]+) [!ner:DATE]? (?$Z [ner:DATE]+) ), 
+  result: Format("%s|%s|%s",$$X.text, "per:date_of_birth", $$Y.text),
+  stage: 2
+}
+
+############################## DATE OF DEATH #############################
 // per:date_of_death 
 
 {
-  pattern: ( (?$X [ner:PERSON | ner:ORGANIZATION]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} [/died/ | /death/] []{0,5} /on/? (?$Y [ner:DATE]) ), 
+  pattern: ( (?$X [ner:PERSON | ner:ORGANIZATION]+) $APPELLATION []{0,5} (/died/ | /death/ | /heavenly/ /abode/ | /was/ /kill.*/ | /passed/ /away/ | /was/ /assassinat.*/) [!ner:DATE]{0,6} (/on/) (?$Y [ner:DATE]+) ), 
+  result: Format("%s|%s|%s",$$X.text, "per:date_of_death", $$Y.text),
+  stage: 2
+}
+
+{
+  pattern: (  ( /kill.*/ | /murder.*/ | /assassinat.*/) (?$X [ner:PERSON | ner:ORGANIZATION]+) $APPELLATION [!ner:DATE]{0,6} (/on/) (?$Y [ner:DATE]+) ), 
+  result: Format("%s|%s|%s",$$X.text, "per:date_of_death", $$Y.text),
+  stage: 2
+}
+
+{
+  pattern: ( (?$X [ner:PERSON | ner:ORGANIZATION]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} [/died/ | /death/] [!ner:DATE]{0,6} /on/? (?$Y [ner:DATE]) ), 
   result: Format("%s|%s|%s",$$X.text, "per:date_of_death", $$Y.text),
   stage: 3
 }
 
 {
-  pattern: ( (?$X [ner:PERSON | ner:ORGANIZATION]+) [/,/ | /-LRB-/]  ([/died/ | /death/] []?)? (?$Z [ner:DATE]) /-/+ (?$Y [ner:DATE]) ), 
+  pattern: ( (?$X [ner:PERSON | ner:ORGANIZATION]+) [/,/ | /-LRB-/]?  ([/died/ | /death/] []?)? (?$Z [ner:DATE]) [!ner:DATE]? (?$Y [ner:DATE]) ), 
   result: Format("%s|%s|%s",$$X.text, "per:date_of_death", $$Y.text),
   stage: 3
 }
 
+############################## AGE #############################
 //per:age
 
 {
@@ -124,62 +154,77 @@ ENV.defaultResultAnnotationKey = ner
   stage: 4
 }
 
+{
+  pattern: ( /At/ (/the/)? /age/ (/of/)? (?$Y [ ({word::IS_NUM} | ner:NUMBER) &!{word>130} ]+) [!(ner:PERSON | tag:/NNP/)]{0,2}  (?$X [ner:PERSON]+) ), 
+  result: Format("%s|%s|%s",$$X.text, "per:age", $$Y.text),
+  stage: 4
+}
+
+{
+  pattern: (  (?$X [ner:PERSON]+) $APPELLATION /died/ []{0,10} /at/ (/the/)? /age/ (/of/)? (?$Y [ ({word::IS_NUM} | ner:NUMBER) &!{word>130} ]+) ), 
+  result: Format("%s|%s|%s",$$X.text, "per:age", $$Y.text),
+  stage: 4
+}
+
+############################## COUNTRY OF BIRTH #############################
 //per:country_of_birth
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} [/born/ | /birth/] []{0,2} [/in/ | /at/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} [/born/ | /birth.*/] []{0,2} [/in/ | /at/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
     result: Format("%s|%s|%s",$$X.text, "per:country_of_birth", $$Y.text),
 	stage: 5
 }
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} (?$Y [tag:JJ & (/born/ | /birth/) ]) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} (?$Y [tag:JJ & (/born/ | /birth.*/) ]) ), 
     result: Format("%s|%s|%s",$$X.text, "per:country_of_birth", $$Y.text),
 	stage: 5
 }
 
+############################## STATEORPROVINCE OF BIRTH #############################
 //per:stateorprovince_of_birth
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} [/born/ | /birth/] []{0,2} [/in/ | /at/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} [/born/ | /birth.*/] []{0,2} [/in/ | /at/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
     result: Format("%s|%s|%s",$$X.text, "per:stateorprovince_of_birth", $$Y.text),
 	stage: 6
 }
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} [/born/ | /birth/] []{0,2} [/in/ | /at/]? [ner:LOCATION]+ /,/ (?$Y [ner:LOCATION]+)  ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} [/born/ | /birt.*h/] []{0,2} [/in/ | /at/]? [ner:LOCATION]+ /,/ (?$Y [ner:LOCATION]+)  ), 
     result: Format("%s|%s|%s",$$X.text, "per:stateorprovince_of_birth", $$Y.text),
 	stage: 6
 }
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} (?$Y [tag:JJ & (/born/ | /birth/) ]) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} (?$Y [tag:JJ & (/born/ | /birth.*/) ]) ), 
     result: Format("%s|%s|%s",$$X.text, "per:stateorprovince_of_birth", $$Y.text),
 	stage: 6
 }
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} [/born/ | /birth/] []{0,2} [/in/ | /at/]? (?$Y [ner:LOCATION]+) [/province/ | /state/] ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} [/born/ | /birth.*/] []{0,2} [/in/ | /at/]? (?$Y [ner:LOCATION]+) [/province/ | /state/] ), 
     result: Format("%s|%s|%s",$$X.text, "per:stateorprovince_of_birth", $$Y.text),
 	stage: 6
 }
 
+############################## CITY OF BIRTH #############################
 //per:city_of_birth
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} [/born/ | /birth/] []{0,2} [/in/ | /at/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} [/born/ | /birth.*/] []{0,2} [/in/ | /at/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
     result: Format("%s|%s|%s",$$X.text, "per:city_of_birth", $$Y.text),
 	stage: 7
 }
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} [/born/ | /birth/] []{0,2} [/in/ | /at/]? []{0,2} (?$Y [ner:LOCATION]+) /,/? (?$Y [ner:LOCATION]+)?  ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} [/born/ | /birth.*/] []{0,2} [/in/ | /at/]? [!ner:PERSON]{0,2} (?$Y [ner:LOCATION]+) /,/? (?$Y [ner:LOCATION]+)?  ), 
     result: Format("%s|%s|%s",$$X.text, "per:city_of_birth", $$Y.text),
 	stage: 7
 }
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} (?$Y [tag:JJ & (/born/ | /birth/) ]) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} (?$Y [tag:JJ & (/born/ | /birth.*/) ]) ), 
     result: Format("%s|%s|%s",$$X.text, "per:city_of_birth", $$Y.text),
 	stage: 7
 }
@@ -187,7 +232,7 @@ ENV.defaultResultAnnotationKey = ner
 //per:country_of_death
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} (/died/ | /death/ | /passed/ /away/ | /killed/) []{0,5} [/in/ | /at/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} (/died/ | /death/ | /passed/ /away/ | /killed/) []{0,6} [/in/ | /at/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
     result: Format("%s|%s|%s",$$X.text, "per:country_of_death", $$Y.text),
 	stage: 8
 }
@@ -195,13 +240,13 @@ ENV.defaultResultAnnotationKey = ner
 //per:stateorprovince_of_death
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} (/died/ | /death/ | /passed/ /away/ | /killed/) []{0,5} [/in/ | /at/]? [ner:LOCATION]+ /,/ (?$Y [ner:LOCATION]+)  ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} (/died/ | /death/ | /passed/ /away/ | /killed/) []{0,6} [/in/ | /at/]? [ner:LOCATION]+ /,/ (?$Y [ner:LOCATION]+)  ), 
     result: Format("%s|%s|%s",$$X.text, "per:stateorprovince_of_death", $$Y.text),
 	stage: 25
 }
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} (/died/ | /death/ | /passed/ /away/ | /killed/) []{0,5} [/in/ | /at/]? (?$Y [ner:LOCATION]+) [/province/ | /state/] ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} (/died/ | /death/ | /passed/ /away/ | /killed/) []{0,6} [/in/ | /at/]? (?$Y [ner:LOCATION]+) [/province/ | /state/] ), 
     result: Format("%s|%s|%s",$$X.text, "per:stateorprovince_of_death", $$Y.text),
 	stage: 25
 }
@@ -209,7 +254,7 @@ ENV.defaultResultAnnotationKey = ner
 //per:city_of_death
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,2} $APPELLATION []{0,2} (/died/ | /death/ | /passed/ /away/ | /killed/) []{0,5} [/in/ | /at/]? []{0,2} (?$Y [ner:LOCATION]+) /,/? (?$Y [ner:LOCATION]+)?  ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} (/died/ | /death/ | /passed/ /away/ | /killed/) []{0,6} [/in/ | /at/]? []{0,2} (?$Y [ner:LOCATION]+) /,/? (?$Y [ner:LOCATION]+)?  ), 
     result: Format("%s|%s|%s",$$X.text, "per:city_of_death", $$Y.text),
 	stage: 9
 }
@@ -217,7 +262,7 @@ ENV.defaultResultAnnotationKey = ner
 //per:origin
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,3} $APPELLATION []{0,4} (/grew/ /up/ /in/ | /raised/ /in/ | /native/ /of/ | /citizen/ /of/) (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,3} $APPELLATION []{0,6} (/grew/ /up/ /in/ | /raised/ /in/ | /native/ /of/ | /citizen/ /of/) (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
     result: Format("%s|%s|%s",$$X.text, "per:origin", $$Y.text),
 	stage: 10
 }
@@ -225,7 +270,7 @@ ENV.defaultResultAnnotationKey = ner
 //per:cause_of_death
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,3} $APPELLATION []{0,4} (/passed/ /away/ | /died/ | /death/ | /succumb.*/ /to/ | /lost/ []? /battle/ ) (/of/ | /from/ | /due/? /to/ | /as/ /a/? /result/ /of/) (?$Y ([tag:/NN.*/ | tag:/CC/]+) ) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,3} $APPELLATION []{0,6} (/passed/ /away/ | /died/ | /death/ | /succumb.*/ /to/ | /lost/ []? /battle/ ) (/of/ | /from/ | /due/? /to/ | /as/ /a/? /result/ /of/) (?$Y ([tag:/NN.*/ | tag:/CC/]+) ) ), 
     result: Format("%s|%s|%s",$$X.text, "per:origin", $$Y.text),
 	stage: 11
 }
@@ -233,7 +278,7 @@ ENV.defaultResultAnnotationKey = ner
 //per:countries_of_residence
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,3} $APPELLATION []{0,4} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /died/ | /death/ | /raise.*/ | /early/ /life/ | /spent/) []{0,4} [/in/ | /at/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,3} $APPELLATION []{0,6} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /died/ | /death/ | /raise.*/ | /early/ /life/ | /spent/ | /settle.*/ | /moved/ | /.*migrate.*/ | /migrant.*/) []{0,6} [/in/ | /at/ | /from/ | /to/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
     result: Format("%s|%s|%s",$$X.text, "per:country_of_residence", $$Y.text),
 	stage: 12
 }
@@ -246,19 +291,19 @@ ENV.defaultResultAnnotationKey = ner
 //per:stateorprovince_of_residence
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,3} $APPELLATION []{0,4} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /died/ | /death/ | /raise.*/ | /early/ /life/ | /spent/) []{0,4} [/in/ | /at/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,3} $APPELLATION []{0,6} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /died/ | /death/ | /raise.*/ | /early/ /life/ | /spent/ | /settle.*/ | /moved/ | /.*migrate.*/ | /migrant.*/) []{0,6} [/in/ | /at/ | /from/ | /to/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
     result: Format("%s|%s|%s",$$X.text, "per:stateorprovince_of_residence", $$Y.text),
 	stage: 13
 }
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,3} $APPELLATION []{0,4} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /die/ | /death/ | /raise.*/ | /early/ /life/ | /spent/) []{0,4} [/in/ | /at/]? [ner:LOCATION]+ /,/ (?$Y [ner:LOCATION]+) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,3} $APPELLATION []{0,6} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /die/ | /death/ | /raise.*/ | /early/ /life/ | /spent/ | /settle.*/ | /moved/ | /.*migrate.*/ | /migrant.*/) []{0,6} [/in/ | /at/ | /from/ | /to/]? [ner:LOCATION]+ /,/ (?$Y [ner:LOCATION]+) ), 
     result: Format("%s|%s|%s",$$X.text, "per:stateorprovince_of_residence", $$Y.text),
 	stage: 13
 }
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,3} $APPELLATION []{0,4} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /die/ | /death/ | /raise.*/ | /early/ /life/ | /spent/) []{0,4} [/in/ | /at/]? [ner:LOCATION]+ /,/ (?$Y [ner:LOCATION]+) [/province/ | /state/] ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,3} $APPELLATION []{0,6} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /die/ | /death/ | /raise.*/ | /early/ /life/ | /spent/ | /settle.*/ | /moved/ | /.*migrate.*/ | /migrant.*/) []{0,6} [/in/ | /at/ | /from/ | /to/]? [ner:LOCATION]+ /,/ (?$Y [ner:LOCATION]+) [/province/ | /state/] ), 
     result: Format("%s|%s|%s",$$X.text, "per:stateorprovince_of_residence", $$Y.text),
 	stage: 13
 }
@@ -271,13 +316,13 @@ ENV.defaultResultAnnotationKey = ner
 //per:city_of_residence
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,3} $APPELLATION []{0,4} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /died/ | /death/ | /raise.*/ | /early/ /life/ | /spent/) []{0,4} [/in/ | /at/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,3} $APPELLATION []{0,6} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /died/ | /death/ | /raise.*/ | /early/ /life/ | /spent/ | /settle.*/ | /moved/ | /.*migrate.*/ | /migrant.*/) []{0,6} [/in/ | /at/ | /from/ | /to/]? (?$Y [ner:LOCATION]+ /,/? ([ner:LOCATION]+)? ) ), 
     result: Format("%s|%s|%s",$$X.text, "per:city_of_residence", $$Y.text),
 	stage: 14
 }
 
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]  []{0,3} $APPELLATION []{0,2} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /died/ | /death/ | /raise.*/ | /early/ /life/ | /spent/) []{0,4} [/in/ | /at/]? (?$Y [ner:LOCATION])+ /,/? (?$Z [ner:LOCATION]+)? ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,3} $APPELLATION []{0,6} (/born/ | /birth/ | /live/ | /home/ | /house/ | /family/ | /reside.*/ | /citizen/ | /studi.*/ | /died/ | /death/ | /raise.*/ | /early/ /life/ | /spent/ | /settle.*/ | /moved/ | /.*migrate.*/ | /migrant.*/) []{0,6} [/in/ | /at/ | /from/ | /to/]? (?$Y [ner:LOCATION])+ /,/? (?$Z [ner:LOCATION]+)? ), 
     result: Format("%s|%s|%s",$$X.text, "per:city_of_residence", $$Y.text),
 	stage: 14
 }
@@ -289,114 +334,114 @@ ENV.defaultResultAnnotationKey = ner
 
 //per:spouse
 {
-	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] $APPELLATION []{0,3} (/wife/ | /spouse/ | /husband/ | /marri/) []{0,2} (?$Y [ner:PERSON]+) ),
+	pattern: ( (?$X $ENTITY) [/,/ | /-LRB-/]? $APPELLATION []{0,3} (/wife/ | /spouse/ | /husband/ | /marri.*/) [!tag:/NNP/]{0,2} (?$Y $ENTITY) ),
 	result: Format("%s|%s|%s",$$X.text, "per:spouse", $$Y.text),
 	stage: 15
 }
 
 {
-	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] $APPELLATION []{0,3} (?$Y [ner:PERSON]+) [tag:/POS/] []{0,2} (/wife/ | /spouse/ | /husband/) ),
+	pattern: ( (?$X $ENTITY) [/,/ | /-LRB-/]? $APPELLATION []{0,3} (?$Y $ENTITY) [tag:/POS/] []{0,2} (/wife/ | /spouse/ | /husband/) ),
 	result: Format("%s|%s|%s",$$X.text, "per:spouse", $$Y.text),
 	stage: 15
 }
 
 {
-	pattern: ( (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/wife/ | /spouse/ | /husband/) [!(pos:/VB.*/)]{0,2} (?$Y [ner:PERSON]+ ) ),
+	pattern: ( (?$X $ENTITY) [tag:/POS/] []{0,2} (/wife/ | /spouse/ | /husband/) [!(pos:/VB.*/ | tag:/NNP/)]{0,2} (?$Y $ENTITY ) ),
 	result: Format("%s|%s|%s",$$X.text, "per:spouse", $$Y.text),
 	stage: 15
 }
 
 //per:sibling
 {
-	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] $APPELLATION []{0,3} (/sister/ | /sibling/ | /brother/) []{0,2} (?$Y [ner:PERSON]+) ),
+	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]? $APPELLATION []{0,3} (/sister/ | /sibling/ | /brother/) [!tag:/NNP/]{0,2} (?$Y [ner:PERSON]+) ),
 	result: Format("%s|%s|%s",$$X.text, "per:sibling", $$Y.text),
 	stage: 16
 }
 
 {
-	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] $APPELLATION []{0,3} (?$Y [ner:PERSON]+) [tag:/POS/] []{0,2} (/sister/ | /sibling/ | /brother/) ),
+	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]? $APPELLATION []{0,3} (?$Y [ner:PERSON]+) [tag:/POS/] []{0,2} (/sister/ | /sibling/ | /brother/) ),
 	result: Format("%s|%s|%s",$$X.text, "per:sibling", $$Y.text),
 	stage: 16
 }
 
 {
-	pattern: ( (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/sister/ | /sibling/ | /brother/) [!(pos:/VB.*/)]{0,2} (?$Y [ner:PERSON]+ ) ),
+	pattern: ( (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/sister/ | /sibling/ | /brother/) [!(pos:/VB.*/ | tag:/NNP/)]{0,2} (?$Y [ner:PERSON]+ ) ),
 	result: Format("%s|%s|%s",$$X.text, "per:sibling", $$Y.text),
 	stage: 16
 }
 
 //per:other_family
 {
-	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] $APPELLATION []{0,3} (/cousin/ | /aunt/ | /uncle/ | /nephew/ | /niece/ | /grand.*/ | /.*in-law/ ) []{0,2} (?$Y [ner:PERSON]+) ),
+	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]? $APPELLATION []{0,3} (/cousin/ | /aunt/ | /uncle/ | /nephew/ | /niece/ | /grand.*/ | /.*in-law/ ) [!tag:/NNP/]{0,2} (?$Y [ner:PERSON]+) ),
 	result: Format("%s|%s|%s",$$X.text, "per:other_family", $$Y.text),
 	stage: 17
 }
 
 {
-	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] $APPELLATION []{0,3} (?$Y [ner:PERSON]+) [tag:/POS/]  []{0,2} (/cousin/ | /aunt/ | /uncle/ | /nephew/ | /niece/ | /grand.*/ | /.*in-law/) ),
+	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]? $APPELLATION []{0,3} (?$Y [ner:PERSON]+) [tag:/POS/]  []{0,2} (/cousin/ | /aunt/ | /uncle/ | /nephew/ | /niece/ | /grand.*/ | /.*in-law/) ),
 	result: Format("%s|%s|%s",$$X.text, "per:other_family", $$Y.text),
 	stage: 17
 }
 
 {
-	pattern: ( (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/cousin/ | /aunt/ | /uncle/ | /nephew/ | /niece/ | /grand.*/ | /.*in-law/) [!(pos:/VB.*/)]{0,2} (?$Y [ner:PERSON]+ ) ),
+	pattern: ( (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/cousin/ | /aunt/ | /uncle/ | /nephew/ | /niece/ | /grand.*/ | /.*in-law/) [!(pos:/VB.*/ | tag:/NNP/)]{0,2} (?$Y [ner:PERSON]+ ) ),
 	result: Format("%s|%s|%s",$$X.text, "per:other_family", $$Y.text),
 	stage: 17
 }
 
 //per:children
 {
-	pattern: ( (?$Y [ner:PERSON]+) [/,/ | /-LRB-/] $APPELLATION []{0,3} (/son/ | /daughter/ | /child/ ) /of/ []{1,2} (?$X [ner:PERSON]+) ),
+	pattern: ( (?$Y [ner:PERSON]+) [/,/ | /-LRB-/]? $APPELLATION []{0,3} (/son/ | /daughter/ | /child/ ) /of/ [!tag:/NNP/]{0,2} (?$X [ner:PERSON]+) ),
 	result: Format("%s|%s|%s",$$X.text, "per:children", $$Y.text),
 	stage: 18
 }
 
 {
-	pattern: ( (?$Y [ner:PERSON]+) [/,/ | /-LRB-/] $APPELLATION []{0,3} (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/son/ | /daughter/ | /child/ ) ),
+	pattern: ( (?$Y [ner:PERSON]+) [/,/ | /-LRB-/]? $APPELLATION []{0,3} (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/son/ | /daughter/ | /child/ ) ),
 	result: Format("%s|%s|%s",$$X.text, "per:children", $$Y.text),
 	stage: 18
 }
 
 {
-	pattern: ( (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/son/ | /daughter/ | /child/ ) [!(pos:/VB.*/)]{0,2} (?$Y [ner:PERSON]+ ) ),
+	pattern: ( (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/son/ | /daughter/ | /child/ ) [!(pos:/VB.*/  | tag:/NNP/)]{0,2} (?$Y [ner:PERSON]+ ) ),
 	result: Format("%s|%s|%s",$$X.text, "per:children", $$Y.text),
 	stage: 18
 }
 
 //per:parents
 {
-	pattern: ( (?$Y [ner:PERSON]+) [/,/ | /-LRB-/] $APPELLATION []{0,3} ( /father/ | /mother/ | /parent/ ) /of/ []{1,2} (?$X [ner:PERSON]+) ),
+	pattern: ( (?$Y [ner:PERSON]+) [/,/ | /-LRB-/]? $APPELLATION []{0,3} ( /father.*/ | /mother.*/ | /parent.*/ ) /of/ [!tag:/NNP/]{0,2} (?$X [ner:PERSON]+) ),
 	result: Format("%s|%s|%s %s",$$X.text, "per:parents", $$Y.text,$$evid.text),
 	stage: 19
 }
 
 {
-	pattern: ( (?$Y [ner:PERSON]+) [/,/ | /-LRB-/] $APPELLATION []{0,3} (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/son/ | /daughter/ | /child/ ) ),
+	pattern: ( (?$Y [ner:PERSON]+) [/,/ | /-LRB-/]? $APPELLATION []{0,3} (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/son/ | /daughter/ | /child/ ) ),
 	result: Format("%s|%s|%s %s",$$X.text, "per:parents", $$Y.text,"R2"),
 	stage: 19
 }
 
 {
-	pattern: ( (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/son/ | /daughter/ | /child/ ) [!(pos:/VB.*/)]{0,2} (?$Y [ner:PERSON]+ ) ),
+	pattern: ( (?$X [ner:PERSON]+) [tag:/POS/] []{0,2} (/son/ | /daughter/ | /child/ ) [!(pos:/VB.*/ | tag:/NNP/)]{0,2} (?$Y [ner:PERSON]+ ) ),
 	result: Format("%s|%s|%s %s",$$X.text, "per:parents", $$Y.text,"R3"),
 	stage: 19
 }
 
 //per:charges
 {
-    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,3} (/accuse.*/ /convict.*/ | /resign.*/ | /impeach.*/ | /blame.*/ | /indicted/ | /charged/ | /prosecut.*/) []{0,3} (/of/ | /for/ | /over/ | /with/) (?$Y [!(/./ | /,/)]+ ) ), 
+    pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,5} (/accuse.*/ | /convict.*/ | /resign.*/ | /impeach.*/ | /blame.*/ | /indict.*/ | /charged/ | /prosecut.*/) [!tag:/VB.*/]{0,3} (/of/ | /for/ | /over/ | /with/) (?$Y [!(/\./ | /,/)]+ ) ), 
     result: Format("%s|%s|%s",$$X.text, "per:charges", $$Y.text),
 	stage: 20
 }
 
 {
-    pattern: ( (/accuse.*/ /convict.*/ | /resign.*/ | /impeach.*/ | /blame.*/ | /indicted/ | /charged/ | /prosecut.*/) (?$X [ner:PERSON]+) []{0,2} $APPELLATION []{0,3} (/of/ | /for/ | /over/ | /with/) (?$Y [!(/./ | /,/)]+ ) ), 
+    pattern: ( (/accuse.*/ | /convict.*/ | /resign.*/ | /impeach.*/ | /blame.*/ | /indict.*/ | /charged/ | /prosecut.*/) (?$X [ner:PERSON]+) []{0,2} $APPELLATION [!tag:/VB.*/]{0,5} (/of/ | /for/ | /over/ | /with/) (?$Y [!(/\./ | /,/)]+ ) ), 
     result: Format("%s|%s|%s",$$X.text, "per:charges", $$Y.text),
 	stage: 20
 }
 
 {
-    pattern: ( (/accuse.*/ /convict.*/ | /resign.*/ | /impeach.*/ | /blame.*/ | /indicted/ | /charged/ | /prosecut.*/) (/of/ | /for/ | /over/ | /with/) (?$Y [!(/./ | /,/)]+ ) (/,/) (?$X [ner:PERSON]+) []{0,2} $APPELLATION []{0,3}  (?$Y [!(/./ | /,/)]+ ) ), 
+    pattern: ( (/accuse.*/ | /convict.*/ | /resign.*/ | /impeach.*/ | /blame.*/ | /indict.*/ | /charged/ | /prosecut.*/) (/of/ | /for/ | /over/ | /with/) (?$Y [!(/./ | /,/)]+ ) (/,/) (?$X [ner:PERSON]+) ), 
     result: Format("%s|%s|%s",$$X.text, "per:charges", $$Y.text),
 	stage: 20
 }
@@ -405,11 +450,12 @@ ENV.defaultResultAnnotationKey = ner
 //per:schools_attended
 
 $COLLEGE= (
-	( [tag:/DT/]? [tag:/JJ/]* [tag:/NN.*/] (/University/ | /School/ | /College/) /of/ [tag:/JJ/]* [tag:/NN.*/]+) | 
+	( [tag:/DT/]? [tag:/JJ/]* [tag:/NNP/]* (/University/ | /School/ | /College/) /of/ [tag:/JJ/]* [tag:/NN.*/]+) | 
 	( [tag:/JJ/]* [tag:/NN.*/]+ (/University/ | /College/ | /School/) )
 )
+
 {
-	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,2} (/attended/ | /graduate.*/ /from/ | /graduate.*/ /of/ | /alumn.*/ /of/ ) (?$Y $COLLEGE) ),
+	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/]?  []{0,2} $APPELLATION []{0,6} (/attended/ | /graduat.*/ /from/ | /graduat.*/ /of/ | /alumn.*/ /of/ | /stud.*/ ) []{0,6} (?$Y $COLLEGE) ),
 	result: Format("%s|%s|%s",$$X.text, "per:schools_attended", $$Y.text),
 	stage: 21
 }
@@ -446,11 +492,12 @@ $RELIGION= (
 	/buddhism/ |
 	/taoist/ |
 	/taoism/ |
-	/evangelist/
+	/evangeli.*/ |
+	/anglic.*/
 )
 
 {
-	pattern: ( (?$Y $RELIGION) []{0,3} (?$X [ner:PERSON]+) ),
+	pattern: ( (?$Y $RELIGION) [!ner:PERSON]{0,3} (?$X [ner:PERSON]+) ),
 	result: Format("%s|%s|%s",$$X.text, "per:religion", $$Y.text),
 	stage: 22
 }
@@ -470,6 +517,7 @@ $TITLEWORDS= (
 	/president/	|
 	/premier/	|
 	/vice-president/	|
+	/vice president/	|
 	/senior leader/	|
 	/president/	|
 	/general/ /secretary/	|
@@ -505,6 +553,7 @@ $TITLEWORDS= (
 	/executive/	|
 	/representative/	|
 	/manager/	|
+	/consultant/	|
 	/spokesman/	|
 	/spokewoman/	|
 	/chief/	|
@@ -531,8 +580,8 @@ $TITLE= (
 
 //United States President Barack Obama
 {
-	pattern: ( (?$Y $TITLE) []{0,1} (?$X [ner:PERSON]+) ),
-	result: Format("%s|%s|%s R1",$$X.text, "per:title", $$Y.text),
+	pattern: ( (?$Y $TITLE) [!ner:PERSON]{0,1} (?$X [ner:PERSON]+) ),
+	result: Format("%s|%s|%s",$$X.text, "per:title", $$Y.text),
 	stage: 23
 }
 
@@ -540,21 +589,21 @@ $TITLE= (
 // Michael Jordan was the managing director of Flash Inc .
 {
 	pattern: ( (?$X [ner:PERSON]+) []{0,3} (?$Y $TITLE) (/of/ | /for/) ),
-	result: Format("%s|%s|%s R2",$$X.text, "per:title", $$Y.text),
+	result: Format("%s|%s|%s",$$X.text, "per:title", $$Y.text),
 	stage: 23
 }
 
 //Obama, the United States President
 {
 	pattern: ( (?$X [ner:PERSON]+) [/,/ | /-LRB-/] [tag:/NNP/ | tag:/DT/ | tag:/IN/]* (?$Y $TITLE) ),
-	result: Format("%s|%s|%s R3",$$X.text, "per:title", $$Y.text),
+	result: Format("%s|%s|%s",$$X.text, "per:title", $$Y.text),
 	stage: 23
 }
 
 //Pittsburgh Steelers linesman ABC
 //NBA shooting guard Michael Jordan was the managing director of Flash Inc .
 {
-	pattern: ( (?$Z [ner:NNP]+) (?$Y [/tag:NN/]+) []{0,1} (?$X [ner:PERSON]+) ),
+	pattern: ( (?$Z [ner:NNP]+) (?$Y [/tag:NN/]+) [!ner:PERSON]{0,1} (?$X [ner:PERSON]+) ),
 	result: Format("%s|%s|%s R4",$$X.text, "per:title", $$Y.text),
 	stage: 23
 }
@@ -565,14 +614,14 @@ $TITLE= (
 $EMPLOYEE= (	$TITLE | /employee/ | /employed/ | /work.*/ | /staff/ | /member.*/ | /personnel/ )
 
 {
-	pattern: ( (?$Y [!ner:/O/]+ ) []{0,2} (?$Z $EMPLOYEE) []{0,2} (?$X [ner:PERSON]+) ),
+	pattern: ( (?$Y [!ner:/O/]+ ) []{0,2} (?$Z $EMPLOYEE) [!ner:PERSON]{0,2} (?$X [ner:PERSON]+) ),
 	result: Format("%s|%s|%s P1",$$X.text, "per:employee_of_member_of", $$Y.text),
 	stage: 24
 }
 
 //United States President Barack Obama
 {
-	pattern: ( (?$Y [ner:ORGANIZATION]+) []{0,2} $APPELLATION []{0,3} (?$Z $EMPLOYEE) []{0,1} (?$X [ner:PERSON]+) ),
+	pattern: ( (?$Y [ner:ORGANIZATION]+) []{0,2} $APPELLATION []{0,3} (?$Z $EMPLOYEE) [!ner:PERSON]{0,1} (?$X [ner:PERSON]+) ),
 	result: Format("%s|%s|%s P2",$$X.text, "per:employee_of_member_of", $$Y.text),
 	stage: 24
 }
